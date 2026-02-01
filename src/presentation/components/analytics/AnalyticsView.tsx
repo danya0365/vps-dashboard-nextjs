@@ -50,8 +50,8 @@ export function AnalyticsView({ stats, servers }: AnalyticsViewProps) {
           <OverviewCard
             title="Total Servers"
             value={stats.totalServers}
-            change="+2"
-            changeType="positive"
+            change="Host only"
+            changeType="neutral"
             delay={50}
           />
           <OverviewCard
@@ -64,15 +64,15 @@ export function AnalyticsView({ stats, servers }: AnalyticsViewProps) {
           <OverviewCard
             title="Avg CPU Usage"
             value={`${stats.avgCpuUsage}%`}
-            change="-5%"
+            change="Real-time"
             changeType="positive"
             delay={150}
           />
           <OverviewCard
             title="Avg RAM Usage"
             value={`${stats.avgRamUsage}%`}
-            change="+3%"
-            changeType="negative"
+            change="Real-time"
+            changeType="neutral"
             delay={200}
           />
         </div>
@@ -371,6 +371,7 @@ function getProviderColor(provider: string): string {
     Linode: "from-green-400 to-emerald-500",
     Hetzner: "from-red-400 to-rose-500",
     "AWS Lightsail": "from-amber-400 to-orange-500",
+    "Bare Metal": "from-slate-600 to-slate-700",
   };
   return colors[provider] || "from-gray-400 to-gray-500";
 }

@@ -5,9 +5,9 @@
  */
 
 import {
-    DashboardStats,
-    IVpsRepository,
-    VpsServer,
+  DashboardStats,
+  IVpsRepository,
+  VpsServer,
 } from '@/src/application/repositories/IVpsRepository';
 
 export interface DashboardViewModel {
@@ -17,6 +17,20 @@ export interface DashboardViewModel {
 
 export class DashboardPresenter {
   constructor(private readonly repository: IVpsRepository) {}
+
+  /**
+   * Get all servers
+   */
+  async getServers(): Promise<VpsServer[]> {
+    return this.repository.getAll();
+  }
+
+  /**
+   * Get dashboard stats
+   */
+  async getStats(): Promise<DashboardStats> {
+    return this.repository.getStats();
+  }
 
   /**
    * Get view model for dashboard

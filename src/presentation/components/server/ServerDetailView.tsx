@@ -8,6 +8,8 @@ import { GlassPanel } from "../common/GlassPanel";
 import { StatusIndicator } from "../common/StatusIndicator";
 import { MainLayout } from "../layout/MainLayout";
 
+import { useServerDetailPresenter } from "../../presenters/server/useServerDetailPresenter";
+
 interface ServerDetailViewProps {
   server: VpsServer;
 }
@@ -15,7 +17,12 @@ interface ServerDetailViewProps {
 /**
  * ServerDetailView - Detailed view of a single server
  */
-export function ServerDetailView({ server }: ServerDetailViewProps) {
+export function ServerDetailView({ server: initialServer }: ServerDetailViewProps) {
+  const [state, actions] = useServerDetailPresenter(initialServer);
+  const { server, loading } = state;
+
+  const isHostMachine = server.id === 'host-machine';
+
   const fadeIn = useSpring({
     from: { opacity: 0, transform: "translateY(-20px)" },
     to: { opacity: 1, transform: "translateY(0)" },
@@ -39,20 +46,33 @@ export function ServerDetailView({ server }: ServerDetailViewProps) {
       Linode: "from-green-500 to-emerald-600",
       Hetzner: "from-red-500 to-rose-600",
       "AWS Lightsail": "from-amber-500 to-orange-600",
+      "Bare Metal": "from-slate-600 to-slate-700",
     };
     return colors[provider] || "from-gray-500 to-gray-600";
+  };
+
+  const handleRefresh = async () => {
+    await actions.refreshData();
   };
 
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Back button */}
-        <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Dashboard
-        </Link>
+        {/* Back and Refresh buttons */}
+        <div className="flex items-center justify-between">
+          <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Link>
+          <AnimatedButton variant="secondary" size="sm" onClick={handleRefresh} disabled={loading}>
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </AnimatedButton>
+        </div>
 
         {/* Header */}
         <animated.div style={fadeIn} className="flex items-center justify-between">
@@ -87,13 +107,6 @@ export function ServerDetailView({ server }: ServerDetailViewProps) {
           </div>
           <div className="flex items-center gap-3">
             <StatusIndicator status={server.status} size="lg" showLabel />
-            <AnimatedButton variant="secondary" size="md">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Settings
-            </AnimatedButton>
           </div>
         </animated.div>
 
@@ -101,11 +114,16 @@ export function ServerDetailView({ server }: ServerDetailViewProps) {
         <GlassPanel className="p-5" delay={100}>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Quick Actions
+              Quick Actions {isHostMachine && <span className="text-xs font-normal opacity-50 ml-2">(Actions not supported for Host machine)</span>}
             </h2>
             <div className="flex gap-3">
               {server.status === "stopped" ? (
-                <AnimatedButton variant="primary" size="md">
+                <AnimatedButton 
+                  variant="primary" 
+                  size="md" 
+                  onClick={actions.startServer} 
+                  disabled={loading || isHostMachine}
+                >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   </svg>
@@ -113,13 +131,23 @@ export function ServerDetailView({ server }: ServerDetailViewProps) {
                 </AnimatedButton>
               ) : (
                 <>
-                  <AnimatedButton variant="secondary" size="md">
+                  <AnimatedButton 
+                    variant="secondary" 
+                    size="md" 
+                    onClick={actions.restartServer} 
+                    disabled={loading || isHostMachine}
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     Restart
                   </AnimatedButton>
-                  <AnimatedButton variant="danger" size="md">
+                  <AnimatedButton 
+                    variant="danger" 
+                    size="md" 
+                    onClick={actions.stopServer} 
+                    disabled={loading || isHostMachine}
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
@@ -222,21 +250,9 @@ export function ServerDetailView({ server }: ServerDetailViewProps) {
                   time={server.lastCheckedAt}
                   icon="✅"
                 />
-                <ActivityItem
-                  action="Server started"
-                  time={new Date(Date.now() - 86400000 * 2).toISOString()}
-                  icon="▶️"
-                />
-                <ActivityItem
-                  action="Configuration updated"
-                  time={new Date(Date.now() - 86400000 * 5).toISOString()}
-                  icon="⚙️"
-                />
-                <ActivityItem
-                  action="Server restarted"
-                  time={new Date(Date.now() - 86400000 * 10).toISOString()}
-                  icon="🔄"
-                />
+                <div className="text-center py-4 text-xs text-gray-500 opacity-50">
+                  History logs will appear here as they occur
+                </div>
               </div>
             </GlassPanel>
 
