@@ -53,9 +53,11 @@ jobs:
             
             cd /opt/app/vps-dashboard-nextjs
             
-            # Initial clone if directory is empty
+            # Initial clone or init if needed
             if [ ! -d ".git" ]; then
-              git clone https://github.com/${{ github.repository }}.git .
+              echo "🔧 Initializing git repository..."
+              git init
+              git remote add origin https://github.com/${{ github.repository }}.git
             fi
             
             # Pull latest code
