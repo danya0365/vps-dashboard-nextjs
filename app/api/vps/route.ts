@@ -1,7 +1,10 @@
+import { MockVpsRepository } from '@/src/infrastructure/repositories/mock/MockVpsRepository';
 import { SystemVpsRepository } from '@/src/infrastructure/repositories/system/SystemVpsRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
-const repository = new SystemVpsRepository();
+const repository = process.env.NODE_ENV === 'development' 
+  ? new MockVpsRepository() 
+  : new SystemVpsRepository();
 
 /**
  * GET /api/vps

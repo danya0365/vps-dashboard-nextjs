@@ -118,6 +118,30 @@ export function ServerCard({ server, isLoading, onStart, onStop, onRestart, onCo
         </div>
       )}
 
+      {/* Docker & Services Summary */}
+      {server.status === "running" && (
+        <div className="flex gap-2 mt-1">
+          {server.dockerContainers && server.dockerContainers.length > 0 && (
+            <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-cyan-500/5 border border-cyan-500/10 rounded-lg group/docker">
+              <span className="text-sm">🐳</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 leading-none">DOCKER</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{server.dockerContainers.length} Active</span>
+              </div>
+            </div>
+          )}
+          {server.services && server.services.length > 0 && (
+            <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-purple-500/5 border border-purple-500/10 rounded-lg group/service">
+              <span className="text-sm">⚙️</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 leading-none">SERVICES</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{server.services.length} Active</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 mt-auto pt-2">
         {server.status === "stopped" && onStart && (

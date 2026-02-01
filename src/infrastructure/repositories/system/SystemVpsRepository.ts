@@ -73,7 +73,7 @@ export class SystemVpsRepository implements IVpsRepository {
           name: c.name,
           status: c.state,
           image: c.image,
-          uptime: c.started,
+          uptime: new Date(c.started * 1000).toLocaleString(),
         })),
         services: services.map(s => ({
           name: s.name,
