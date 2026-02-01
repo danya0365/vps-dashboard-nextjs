@@ -51,10 +51,6 @@ jobs:
           script: |
             echo "🚀 Starting deployment for vps-dashboard-nextjs..."
             
-            # Create app directory if not exists
-            sudo mkdir -p /opt/app/vps-dashboard-nextjs
-            sudo chown -R $USER:$USER /opt/app/vps-dashboard-nextjs
-            
             cd /opt/app/vps-dashboard-nextjs
             
             # Initial clone if directory is empty
