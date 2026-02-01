@@ -1,15 +1,10 @@
-/**
- * DashboardPresenterServerFactory
- * Factory for creating DashboardPresenter instances on the server side
- */
-
-import { MockVpsRepository } from '@/src/infrastructure/repositories/mock/MockVpsRepository';
+import { SystemVpsRepository } from '@/src/infrastructure/repositories/system/SystemVpsRepository';
 import { DashboardPresenter } from './DashboardPresenter';
 
 export class DashboardPresenterServerFactory {
   static create(): DashboardPresenter {
-    // Use Mock Repository for development
-    const repository = new MockVpsRepository();
+    // Use System Repository for production monitoring
+    const repository = new SystemVpsRepository();
     return new DashboardPresenter(repository);
   }
 }

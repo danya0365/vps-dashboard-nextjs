@@ -1,9 +1,7 @@
-"use client";
-
 import { VpsServer } from "@/src/application/repositories/IVpsRepository";
-import { MockVpsRepository } from "@/src/infrastructure/repositories/mock/MockVpsRepository";
 import { useCallback, useMemo, useState } from "react";
-import { DashboardPresenter, DashboardViewModel } from "./DashboardPresenter";
+import { DashboardViewModel } from "./DashboardPresenter";
+import { createClientDashboardPresenter } from "./DashboardPresenterClientFactory";
 
 export interface DashboardState {
   viewModel: DashboardViewModel | null;
@@ -30,10 +28,9 @@ export function useDashboardPresenter(
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Create presenter instance
+  // Create presenter instance via Client Factory
   const presenter = useMemo(() => {
-    const repository = new MockVpsRepository();
-    return new DashboardPresenter(repository);
+    return createClientDashboardPresenter();
   }, []);
 
   // Refresh data
