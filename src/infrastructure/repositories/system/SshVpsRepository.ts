@@ -73,7 +73,7 @@ export class SshVpsRepository implements IVpsRepository {
         echo "---DOCKER---"
         docker ps --format "{{.ID}}|{{.Names}}|{{.Status}}|{{.Image}}|{{.RunningFor}}" 2>/dev/null || echo "not-installed"
         echo "---DOCKER_STATS---"
-        docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemLimit}}" 2>/dev/null || echo ""
+        docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}" 2>/dev/null || echo ""
         echo "---LOAD---"
         cat /proc/loadavg
         echo "---IOWAIT---"
@@ -135,30 +135,50 @@ export class SshVpsRepository implements IVpsRepository {
     const ioWait = parseFloat(sections['IOWAIT']?.[0] || '0') || 0;
 
     // Docker Stats Parsing
-    const dockerStatsMap = new Map<string, { cpu: number, mem: number, limit: number }>();
+    // Format: ID|CPUPerc|MemUsage|MemPerc
+    // MemUsage example: "207MiB / 7.653GiB" - contains both used and limit separated by " / "
+    const dockerStatsMap = new Map<string, { cpu: number, mem: number, limit: number, memPerc: number }>();
     (sections['DOCKER_STATS'] || []).forEach(line => {
-        const [id, cpu, memStr, limitStr] = line.split('|');
-        if (id && cpu) {
-            const parseValue = (str: string) => {
-                const match = str.match(/([0-9.]+)\s*([a-zA-Z]+)/);
-                if (!match) return 0;
-                let v = parseFloat(match[1]);
-                if (isNaN(v)) return 0;
-                const unit = match[2].toUpperCase();
-                
-                if (unit.startsWith('G')) v *= 1024;        // GB, GiB
-                else if (unit.startsWith('K')) v /= 1024;   // KB, KiB
-                else if (unit.startsWith('B')) v /= (1024 * 1024); // B
-                return v;
-            };
+        const parts = line.split('|');
+        if (parts.length < 4) return;
+        
+        const id = parts[0]?.trim();
+        const cpuStr = parts[1]?.trim();
+        const memUsageStr = parts[2]?.trim(); // "207MiB / 7.653GiB"
+        const memPercStr = parts[3]?.trim();
+        
+        if (!id || !cpuStr) return;
 
-            const cpuValue = parseFloat(cpu.replace('%', '').trim());
-            dockerStatsMap.set(id.trim(), {
-                cpu: isNaN(cpuValue) ? 0 : cpuValue,
-                mem: parseValue(memStr),
-                limit: parseValue(limitStr)
-            });
-        }
+        // Parse memory value with unit to MB
+        const parseMemoryToMB = (str: string): number => {
+            if (!str) return 0;
+            const match = str.match(/([0-9.]+)\s*([a-zA-Z]+)/);
+            if (!match) return 0;
+            let value = parseFloat(match[1]);
+            if (isNaN(value)) return 0;
+            const unit = match[2].toUpperCase();
+            
+            if (unit.startsWith('G')) value *= 1024;          // GiB -> MB
+            else if (unit.startsWith('K')) value /= 1024;     // KiB -> MB 
+            else if (unit.startsWith('B') && !unit.startsWith('BI')) value /= (1024 * 1024); // B -> MB
+            // MiB stays as-is (already MB)
+            return value;
+        };
+
+        // Parse MemUsage: "207MiB / 7.653GiB"
+        const memParts = memUsageStr.split('/').map(s => s.trim());
+        const memUsed = parseMemoryToMB(memParts[0] || '');
+        const memLimit = parseMemoryToMB(memParts[1] || '');
+
+        const cpuValue = parseFloat(cpuStr.replace('%', '').trim());
+        const memPercValue = parseFloat(memPercStr.replace('%', '').trim());
+        
+        dockerStatsMap.set(id, {
+            cpu: isNaN(cpuValue) ? 0 : cpuValue,
+            mem: memUsed,
+            limit: memLimit,
+            memPerc: isNaN(memPercValue) ? 0 : memPercValue
+        });
     });
 
     // Parse Docker
