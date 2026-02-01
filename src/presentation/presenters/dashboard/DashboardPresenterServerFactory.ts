@@ -3,7 +3,7 @@ import { DashboardPresenter } from './DashboardPresenter';
 
 export class DashboardPresenterServerFactory {
   static create(): DashboardPresenter {
-    // Use System Repository for production monitoring
+    // Use System Repository for local monitoring
     const repository = new SystemVpsRepository();
     return new DashboardPresenter(repository);
   }

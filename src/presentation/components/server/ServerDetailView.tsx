@@ -278,6 +278,71 @@ export function ServerDetailView({ server: initialServer }: ServerDetailViewProp
                 </div>
               </div>
             </GlassPanel>
+
+            {/* Docker Containers */}
+            {server.dockerContainers && server.dockerContainers.length > 0 && (
+              <GlassPanel className="p-5" delay={400}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Docker Containers ({server.dockerContainers.length})
+                  </h3>
+                  <span className="text-xs px-2 py-0.5 bg-cyan-500/10 text-cyan-500 rounded-full font-medium">
+                    Docker Active
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                        <th className="pb-2 font-medium">Name</th>
+                        <th className="pb-2 font-medium">Status</th>
+                        <th className="pb-2 font-medium">Image</th>
+                        <th className="pb-2 font-medium text-right">Uptime</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {server.dockerContainers.map((container) => (
+                        <tr key={container.name} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                          <td className="py-3 font-medium text-gray-800 dark:text-gray-200">{container.name}</td>
+                          <td className="py-3">
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all ${
+                              container.status.includes('Up') 
+                                ? 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400' 
+                                : 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${container.status.includes('Up') ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                              {container.status.split(' ')[0]}
+                            </span>
+                          </td>
+                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">{container.image}</td>
+                          <td className="py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{container.uptime}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </GlassPanel>
+            )}
+
+            {/* System Services */}
+            {server.services && server.services.length > 0 && (
+              <GlassPanel className="p-5" delay={450}>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                  Active System Services
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {server.services.map((service) => (
+                    <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${service.status === 'running' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-400'}`} />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{service.name}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono italic">systemd</span>
+                    </div>
+                  ))}
+                </div>
+              </GlassPanel>
+            )}
           </div>
         </div>
       </div>

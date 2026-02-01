@@ -7,9 +7,9 @@
  */
 
 import {
-    DashboardStats,
-    IVpsRepository,
-    VpsServer,
+  DashboardStats,
+  IVpsRepository,
+  VpsServer
 } from '@/src/application/repositories/IVpsRepository';
 import os from 'os';
 import si from 'systeminformation';
@@ -28,13 +28,15 @@ export class SystemVpsRepository implements IVpsRepository {
    */
   async getAll(): Promise<VpsServer[]> {
     try {
-      const [cpu, mem, fs, net, osInfo, time] = await Promise.all([
+      const [cpu, mem, fs, net, osInfo, time, docker, services] = await Promise.all([
         si.currentLoad(),
         si.mem(),
         si.fsSize(),
         si.networkStats(),
         si.osInfo(),
         si.time(),
+        si.dockerContainers(),
+        si.services('ssh, docker, containerd, cron, mysql, nextjs-app, supabase-db, postgrest, traefik'),
       ]);
 
       const hostname = os.hostname();
@@ -67,6 +69,17 @@ export class SystemVpsRepository implements IVpsRepository {
           bandwidthUsed: parseFloat(bandwidthUsed.toFixed(2)),
         },
         uptime: time.uptime,
+        dockerContainers: docker.map(c => ({
+          name: c.name,
+          status: c.state,
+          image: c.image,
+          uptime: c.started,
+        })),
+        services: services.map(s => ({
+          name: s.name,
+          status: s.running ? 'running' : 'stopped',
+          description: s.name,
+        })),
         createdAt: new Date(Date.now() - time.uptime * 1000).toISOString(),
         lastCheckedAt: new Date().toISOString(),
       };

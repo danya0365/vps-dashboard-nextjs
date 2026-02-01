@@ -22,6 +22,19 @@ export interface VpsUsage {
   bandwidthUsed: number; // GB
 }
 
+export interface DockerContainer {
+  name: string;
+  status: string;
+  image: string;
+  uptime: string;
+}
+
+export interface SystemService {
+  name: string;
+  status: 'running' | 'stopped' | 'error';
+  description: string;
+}
+
 export interface VpsServer {
   id: string;
   name: string;
@@ -34,6 +47,8 @@ export interface VpsServer {
   specs: VpsSpecs;
   usage: VpsUsage;
   uptime: number;          // seconds
+  dockerContainers?: DockerContainer[];
+  services?: SystemService[];
   createdAt: string;
   lastCheckedAt: string;
 }

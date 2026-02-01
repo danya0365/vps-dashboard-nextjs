@@ -27,6 +27,7 @@
     "react-hook-form": "^7.69.0",
     "react-spring": "^10.0.3",
     "react-to-print": "^3.2.0",
+    "ssh2": "^1.17.0",
     "systeminformation": "^5.30.7",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
@@ -36,6 +37,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ssh2": "^1.15.5",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
