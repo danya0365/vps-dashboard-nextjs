@@ -14,8 +14,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Set build-time environment variables
+ARG BUILD_COMMIT_SHA
+ENV VERCEL_GIT_COMMIT_SHA=$BUILD_COMMIT_SHA
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
 RUN npm run build
 
 # Stage 3: Runner

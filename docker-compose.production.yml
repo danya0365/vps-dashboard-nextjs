@@ -14,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BUILD_COMMIT_SHA=${BUILD_COMMIT_SHA:-local}
     container_name: vps-dashboard
     restart: unless-stopped
     ports:
