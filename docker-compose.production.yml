@@ -5,6 +5,7 @@
 networks:
   traefik-public:
     external: true
+    name: ai-content-creator-nextjs_traefik-public
   internal:
     driver: bridge
 

@@ -17,7 +17,7 @@ export class SshVpsRepository implements IVpsRepository {
     host: process.env.VPS_SSH_HOST || '203.151.166.65',
     port: parseInt(process.env.VPS_SSH_PORT || '2222'),
     username: process.env.VPS_SSH_USER || 'acuser01',
-    password: process.env.VPS_SSH_PASS || '!DYv/q;#D3OFR^Z*e4',
+    password: process.env.VPS_SSH_PASS || '*******',
   };
 
   private async executeCommand(command: string): Promise<string> {
