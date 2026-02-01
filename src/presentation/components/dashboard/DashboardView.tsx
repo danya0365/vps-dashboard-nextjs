@@ -1,10 +1,15 @@
 "use client";
 
+import { useServerFilter } from "@/src/presentation/hooks/useServerFilter";
 import { DashboardViewModel } from "@/src/presentation/presenters/dashboard/DashboardPresenter";
 import { useDashboardPresenter } from "@/src/presentation/presenters/dashboard/useDashboardPresenter";
 import { animated, useSpring } from "@react-spring/web";
+import { useState } from "react";
 import { AnimatedButton } from "../common/AnimatedButton";
+import { ConsoleModal } from "../common/ConsoleModal";
 import { GlassPanel } from "../common/GlassPanel";
+import { ServerFilterBar } from "../common/ServerFilterBar";
+import { useToast } from "../common/Toast";
 import { MainLayout } from "../layout/MainLayout";
 import { ServerCard } from "./ServerCard";
 
@@ -19,9 +24,16 @@ interface DashboardViewProps {
 export function DashboardView({ initialViewModel }: DashboardViewProps) {
   const [state, actions] = useDashboardPresenter(initialViewModel);
   const { viewModel, loading, actionLoading, error } = state;
+  const { addToast } = useToast();
+  
+  // Console modal state
+  const [consoleServer, setConsoleServer] = useState<{ name: string; ip: string } | null>(null);
   
   const servers = viewModel?.servers || [];
   const stats = viewModel?.stats || initialViewModel.stats;
+
+  // Filter hook
+  const filter = useServerFilter({ servers });
 
   // Stagger animation
   const heroSpring = useSpring({
@@ -29,6 +41,50 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     to: { opacity: 1, transform: "translateY(0)" },
     config: { tension: 200, friction: 25 },
   });
+
+  // Wrapped actions with toast notifications
+  const handleStart = async (id: string) => {
+    await actions.startServer(id);
+    const server = servers.find(s => s.id === id);
+    addToast({
+      type: "success",
+      title: "Server Started",
+      message: `${server?.name} is now running`,
+    });
+  };
+
+  const handleStop = async (id: string) => {
+    await actions.stopServer(id);
+    const server = servers.find(s => s.id === id);
+    addToast({
+      type: "info",
+      title: "Server Stopped",
+      message: `${server?.name} has been stopped`,
+    });
+  };
+
+  const handleRestart = async (id: string) => {
+    await actions.restartServer(id);
+    const server = servers.find(s => s.id === id);
+    addToast({
+      type: "success",
+      title: "Server Restarted",
+      message: `${server?.name} is now running`,
+    });
+  };
+
+  const handleRefresh = async () => {
+    await actions.refreshData();
+    addToast({
+      type: "info",
+      title: "Data Refreshed",
+      message: "Server data has been updated",
+    });
+  };
+
+  const handleConsole = (serverName: string, ipAddress: string) => {
+    setConsoleServer({ name: serverName, ip: ipAddress });
+  };
 
   return (
     <MainLayout>
@@ -45,7 +101,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
           </div>
           <AnimatedButton
             variant="secondary"
-            onClick={actions.refreshData}
+            onClick={handleRefresh}
             disabled={loading}
           >
             <svg
@@ -155,30 +211,68 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
           </div>
         </GlassPanel>
 
+        {/* Filter bar */}
+        <GlassPanel className="p-4" delay={375}>
+          <ServerFilterBar
+            searchQuery={filter.searchQuery}
+            onSearchChange={filter.setSearchQuery}
+            statusFilter={filter.statusFilter}
+            onStatusChange={filter.setStatusFilter}
+            providerFilter={filter.providerFilter}
+            onProviderChange={filter.setProviderFilter}
+            providers={filter.providers}
+            hasActiveFilters={filter.hasActiveFilters}
+            onClearFilters={filter.clearFilters}
+            resultCount={filter.filteredServers.length}
+            totalCount={servers.length}
+          />
+        </GlassPanel>
+
         {/* Server grid */}
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Your Servers
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {servers.map((server, index) => (
-              <div
-                key={server.id}
-                style={{ animationDelay: `${400 + index * 50}ms` }}
-                className="animate-start-hidden animate-card-enter"
-              >
-                <ServerCard
-                  server={server}
-                  isLoading={actionLoading === server.id}
-                  onStart={actions.startServer}
-                  onStop={actions.stopServer}
-                  onRestart={actions.restartServer}
-                />
-              </div>
-            ))}
-          </div>
+          {filter.filteredServers.length === 0 ? (
+            <GlassPanel className="p-12 text-center">
+              <div className="text-4xl mb-3">🔍</div>
+              <p className="text-gray-600 dark:text-gray-400">No servers found</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                Try adjusting your search or filters
+              </p>
+            </GlassPanel>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filter.filteredServers.map((server, index) => (
+                <div
+                  key={server.id}
+                  style={{ animationDelay: `${400 + index * 50}ms` }}
+                  className="animate-start-hidden animate-card-enter"
+                >
+                  <ServerCard
+                    server={server}
+                    isLoading={actionLoading === server.id}
+                    onStart={handleStart}
+                    onStop={handleStop}
+                    onRestart={handleRestart}
+                    onConsole={() => handleConsole(server.name, server.ipAddress)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Console Modal */}
+      {consoleServer && (
+        <ConsoleModal
+          isOpen={!!consoleServer}
+          onClose={() => setConsoleServer(null)}
+          serverName={consoleServer.name}
+          ipAddress={consoleServer.ip}
+        />
+      )}
     </MainLayout>
   );
 }

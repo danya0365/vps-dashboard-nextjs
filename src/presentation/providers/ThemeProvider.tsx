@@ -2,16 +2,17 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ReactNode } from "react";
+import { ToastProvider } from "../components/common/Toast";
 
-interface ThemeProviderProps {
+interface AppProvidersProps {
   children: ReactNode;
 }
 
 /**
- * ThemeProvider - Wrapper for next-themes
- * Provides dark mode support with system preference detection
+ * AppProviders - All client-side providers wrapped together
+ * Includes: Theme, Toast notifications
  */
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function AppProviders({ children }: AppProvidersProps) {
   return (
     <NextThemesProvider
       attribute="class"
@@ -19,7 +20,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       enableSystem
       disableTransitionOnChange={false}
     >
-      {children}
+      <ToastProvider>
+        {children}
+      </ToastProvider>
     </NextThemesProvider>
   );
 }
+
+// Keep the old export for backward compatibility
+export { AppProviders as ThemeProvider };

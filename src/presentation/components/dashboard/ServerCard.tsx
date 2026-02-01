@@ -12,6 +12,7 @@ interface ServerCardProps {
   onStart?: (id: string) => void;
   onStop?: (id: string) => void;
   onRestart?: (id: string) => void;
+  onConsole?: () => void;
 }
 
 /**
@@ -22,7 +23,7 @@ interface ServerCardProps {
  * - Quick actions (start/stop/restart)
  * - Link to details page
  */
-export function ServerCard({ server, isLoading, onStart, onStop, onRestart }: ServerCardProps) {
+export function ServerCard({ server, isLoading, onStart, onStop, onRestart, onConsole }: ServerCardProps) {
   const formatUptime = (seconds: number): string => {
     if (seconds === 0) return "—";
     const days = Math.floor(seconds / 86400);
@@ -179,6 +180,15 @@ export function ServerCard({ server, isLoading, onStart, onStop, onRestart }: Se
           </AnimatedButton>
         )}
         
+        {/* Console button */}
+        {server.status === "running" && onConsole && (
+          <AnimatedButton variant="ghost" size="sm" onClick={onConsole}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </AnimatedButton>
+        )}
+
         {/* View details link */}
         <Link href={`/servers/${server.id}`}>
           <AnimatedButton variant="ghost" size="sm">
