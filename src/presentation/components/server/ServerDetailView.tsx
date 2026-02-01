@@ -208,25 +208,49 @@ export function ServerDetailView({ server: initialServer }: ServerDetailViewProp
                 Resource Usage
               </h3>
               {server.status === "running" ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <MetricGauge
-                    label="CPU Usage"
-                    value={server.usage.cpuPercent}
-                    color="cyan"
-                    icon="⚡"
-                  />
-                  <MetricGauge
-                    label="RAM Usage"
-                    value={server.usage.ramPercent}
-                    color="purple"
-                    icon="🧠"
-                  />
-                  <MetricGauge
-                    label="Disk Usage"
-                    value={server.usage.storagePercent}
-                    color="pink"
-                    icon="💾"
-                  />
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <MetricGauge
+                      label="CPU Usage"
+                      value={server.usage.cpuPercent}
+                      color="cyan"
+                      icon="⚡"
+                    />
+                    <MetricGauge
+                      label="RAM Usage"
+                      value={server.usage.ramPercent}
+                      color="purple"
+                      icon="🧠"
+                    />
+                    <MetricGauge
+                      label="Disk Usage"
+                      value={server.usage.storagePercent}
+                      color="pink"
+                      icon="💾"
+                    />
+                  </div>
+
+                  {/* Detailed Performance Metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Detailed Memory</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <SmallStat label="RAM Used" value={`${server.usage.ramUsage.used} MB`} />
+                        <SmallStat label="RAM Total" value={`${server.usage.ramUsage.total} MB`} />
+                        <SmallStat label="Swap Used" value={`${server.usage.ramUsage.swapUsed} MB`} color={server.usage.ramUsage.swapUsed > 0 ? "text-amber-500" : ""} />
+                        <SmallStat label="Swap Total" value={`${server.usage.ramUsage.swapTotal} MB`} />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">System Performance</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <SmallStat label="Load (1/5/15m)" value={server.usage.loadAverages.map(l => l.toFixed(2)).join(' / ')} />
+                        <SmallStat label="I/O Wait" value={`${server.usage.ioWait.toFixed(2)}%`} color={server.usage.ioWait > 5 ? "text-red-500" : ""} />
+                        <SmallStat label="Net In" value={`${server.usage.networkThroughput.in.toLocaleString()} kbps`} />
+                        <SmallStat label="Net Out" value={`${server.usage.networkThroughput.out.toLocaleString()} kbps`} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -295,15 +319,49 @@ export function ServerDetailView({ server: initialServer }: ServerDetailViewProp
                     <thead>
                       <tr className="text-gray-400 border-b border-gray-100 dark:border-gray-800">
                         <th className="pb-2 font-medium">Name</th>
+                        <th className="pb-2 font-medium">CPU%</th>
+                        <th className="pb-2 font-medium">Memory</th>
                         <th className="pb-2 font-medium">Status</th>
-                        <th className="pb-2 font-medium">Image</th>
-                        <th className="pb-2 font-medium text-right">Uptime</th>
+                        <th className="pb-2 font-medium text-right">Image</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                       {server.dockerContainers.map((container) => (
                         <tr key={container.name} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                          <td className="py-3 font-medium text-gray-800 dark:text-gray-200">{container.name}</td>
+                          <td className="py-3 font-medium text-gray-800 dark:text-gray-200">
+                            <div className="flex flex-col">
+                              <span>{container.name}</span>
+                              <span className="text-[10px] text-gray-400 font-normal">{container.uptime}</span>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            {container.cpuPercent !== undefined ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-12 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full ${container.cpuPercent > 50 ? 'bg-red-500' : 'bg-cyan-500'}`} 
+                                            style={{ width: `${Math.min(container.cpuPercent, 100)}%` }} 
+                                        />
+                                    </div>
+                                    <span className="text-xs font-mono">{container.cpuPercent.toFixed(1)}%</span>
+                                </div>
+                            ) : '—'}
+                          </td>
+                          <td className="py-3">
+                            {container.memoryUsage !== undefined ? (
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-mono">{container.memoryUsage} MB</span>
+                                    {container.memoryLimit && (
+                                        <div className="w-16 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mt-1">
+                                            <div 
+                                                className="h-full bg-purple-500" 
+                                                style={{ width: `${(container.memoryUsage / container.memoryLimit) * 100}%` }} 
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ) : '—'}
+                          </td>
                           <td className="py-3">
                             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all ${
                               container.status.includes('Up') 
@@ -314,8 +372,7 @@ export function ServerDetailView({ server: initialServer }: ServerDetailViewProp
                               {container.status.split(' ')[0]}
                             </span>
                           </td>
-                          <td className="py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">{container.image}</td>
-                          <td className="py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{container.uptime}</td>
+                          <td className="py-3 text-right text-gray-500 dark:text-gray-400 text-[10px] font-mono truncate max-w-[120px]">{container.image}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -460,4 +517,13 @@ function ActivityItem({ action, time, icon }: { action: string; time: string; ic
       </div>
     </div>
   );
+}
+
+function SmallStat({ label, value, color = "" }: { label: string; value: string | number; color?: string }) {
+    return (
+        <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-all">
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-tight">{label}</div>
+            <div className={`text-xs font-bold mt-0.5 truncate ${color || "text-gray-700 dark:text-gray-300"}`}>{value}</div>
+        </div>
+    );
 }

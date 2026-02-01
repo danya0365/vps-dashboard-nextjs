@@ -21,6 +21,22 @@ export interface VpsUsage {
   storagePercent: number;
   bandwidthUsed: number; // GB
   loadAverage: number;   // 1m load
+  loadAverages: [number, number, number]; // 1m, 5m, 15m
+  ioWait: number;
+  ramUsage: {
+    used: number;    // MB
+    total: number;   // MB
+    swapUsed: number; // MB
+    swapTotal: number; // MB
+  };
+  networkThroughput: {
+    in: number;  // kbps or mbps
+    out: number; // kbps or mbps
+  };
+  diskIo: {
+    read: number;  // kbps
+    write: number; // kbps
+  };
 }
 
 export interface DockerContainer {
@@ -28,6 +44,9 @@ export interface DockerContainer {
   status: string;
   image: string;
   uptime: string;
+  cpuPercent: number;
+  memoryUsage: number; // MB
+  memoryLimit: number; // MB
 }
 
 export interface SystemService {

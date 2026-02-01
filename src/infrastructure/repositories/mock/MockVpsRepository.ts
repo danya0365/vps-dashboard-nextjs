@@ -5,11 +5,11 @@
  */
 
 import {
-    DashboardStats,
-    DockerContainer,
-    IVpsRepository,
-    SystemService,
-    VpsServer,
+  DashboardStats,
+  DockerContainer,
+  IVpsRepository,
+  SystemService,
+  VpsServer,
 } from '@/src/application/repositories/IVpsRepository';
 
 // ============================================
@@ -17,11 +17,11 @@ import {
 // ============================================
 
 const DOCKER_SAMPLES: DockerContainer[] = [
-  { name: 'nextjs-app', status: 'Up 2 weeks', image: 'ai-content-creator-nextjs:latest', uptime: '2 weeks ago' },
-  { name: 'supabase-db', status: 'Up 2 weeks (healthy)', image: 'postgres:15-alpine', uptime: '2 weeks ago' },
-  { name: 'traefik', status: 'Up 2 weeks', image: 'traefik:v3.0', uptime: '2 weeks ago' },
-  { name: 'mysql-db', status: 'Up 2 weeks', image: 'mysql:8.0', uptime: '2 weeks ago' },
-  { name: 'phpmyadmin', status: 'Up 2 weeks', image: 'phpmyadmin:latest', uptime: '2 weeks ago' },
+  { name: 'nextjs-app', status: 'Up 2 weeks', image: 'ai-content-creator-nextjs:latest', uptime: '2 weeks ago', cpuPercent: 1.2, memoryUsage: 156, memoryLimit: 512 },
+  { name: 'supabase-db', status: 'Up 2 weeks (healthy)', image: 'postgres:15-alpine', uptime: '2 weeks ago', cpuPercent: 0.5, memoryUsage: 245, memoryLimit: 1024 },
+  { name: 'traefik', status: 'Up 2 weeks', image: 'traefik:v3.0', uptime: '2 weeks ago', cpuPercent: 0.2, memoryUsage: 45, memoryLimit: 256 },
+  { name: 'mysql-db', status: 'Up 2 weeks', image: 'mysql:8.0', uptime: '2 weeks ago', cpuPercent: 0.8, memoryUsage: 180, memoryLimit: 512 },
+  { name: 'phpmyadmin', status: 'Up 2 weeks', image: 'phpmyadmin:latest', uptime: '2 weeks ago', cpuPercent: 0.1, memoryUsage: 32, memoryLimit: 128 },
 ];
 
 const SERVICE_SAMPLES: SystemService[] = [
@@ -41,12 +41,33 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04.5 LTS',
     specs: { cpu: 14, ram: 4, storage: 44, bandwidth: 10 },
-    usage: { cpuPercent: 42, ramPercent: 68, storagePercent: 44, bandwidthUsed: 2.1, loadAverage: 0.95 },
+    usage: { 
+      cpuPercent: 42, 
+      ramPercent: 68, 
+      storagePercent: 44, 
+      bandwidthUsed: 2.1, 
+      loadAverage: 0.95,
+      loadAverages: [0.95, 0.85, 1.10],
+      ioWait: 0.4,
+      ramUsage: {
+        used: 2720,
+        total: 4096,
+        swapUsed: 394,
+        swapTotal: 6144
+      },
+      networkThroughput: { in: 147, out: 306 },
+      diskIo: { read: 25.8, write: 0.02 }
+    },
     uptime: 2167791,
     dockerContainers: [
-      ...DOCKER_SAMPLES,
-      { name: 'supabase-realtime', status: 'Restarting (1) 26 seconds ago', image: 'supabase/realtime:v2.30.6', uptime: '2 weeks ago' },
-      { name: 'supabase-storage', status: 'Up 2 weeks (unhealthy)', image: 'supabase/storage-api:v1.21.1', uptime: '2 weeks ago' },
+      ...DOCKER_SAMPLES.map(c => ({
+        ...c,
+        cpuPercent: Math.random() * 5,
+        memoryUsage: Math.random() * 100 + 20,
+        memoryLimit: 512
+      })),
+      { name: 'supabase-realtime', status: 'Restarting (1) 26 seconds ago', image: 'supabase/realtime:v2.30.6', uptime: '2 weeks ago', cpuPercent: 0, memoryUsage: 0, memoryLimit: 256 },
+      { name: 'supabase-storage', status: 'Up 2 weeks (unhealthy)', image: 'supabase/storage-api:v1.21.1', uptime: '2 weeks ago', cpuPercent: 0.2, memoryUsage: 75, memoryLimit: 256 },
     ],
     services: SERVICE_SAMPLES,
     createdAt: '2024-01-15T10:30:00.000Z',
@@ -62,9 +83,20 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04 LTS',
     specs: { cpu: 4, ram: 8, storage: 160, bandwidth: 5 },
-    usage: { cpuPercent: 45, ramPercent: 62, storagePercent: 38, bandwidthUsed: 1.8, loadAverage: 1.25 },
+    usage: { 
+      cpuPercent: 45, 
+      ramPercent: 62, 
+      storagePercent: 38, 
+      bandwidthUsed: 1.8, 
+      loadAverage: 1.25,
+      loadAverages: [1.25, 1.15, 1.05],
+      ioWait: 0.2,
+      ramUsage: { used: 4960, total: 8192, swapUsed: 0, swapTotal: 2048 },
+      networkThroughput: { in: 850, out: 2100 },
+      diskIo: { read: 12.5, write: 8.4 }
+    },
     uptime: 2592000,
-    dockerContainers: DOCKER_SAMPLES,
+    dockerContainers: DOCKER_SAMPLES.map(c => ({ ...c, cpuPercent: 1.2, memoryUsage: 45, memoryLimit: 512 })),
     services: SERVICE_SAMPLES,
     createdAt: '2024-01-15T10:30:00.000Z',
     lastCheckedAt: new Date().toISOString(),
@@ -79,9 +111,20 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04 LTS',
     specs: { cpu: 8, ram: 32, storage: 500, bandwidth: 8 },
-    usage: { cpuPercent: 28, ramPercent: 75, storagePercent: 52, bandwidthUsed: 3.2, loadAverage: 0.85 },
+    usage: { 
+      cpuPercent: 28, 
+      ramPercent: 75, 
+      storagePercent: 52, 
+      bandwidthUsed: 3.2, 
+      loadAverage: 0.85,
+      loadAverages: [0.85, 0.90, 0.95],
+      ioWait: 1.5,
+      ramUsage: { used: 24576, total: 32768, swapUsed: 0, swapTotal: 4096 },
+      networkThroughput: { in: 2400, out: 1200 },
+      diskIo: { read: 45.2, write: 32.1 }
+    },
     uptime: 5184000,
-    dockerContainers: DOCKER_SAMPLES.slice(0, 3),
+    dockerContainers: DOCKER_SAMPLES.slice(0, 3).map(c => ({ ...c, cpuPercent: 0.5, memoryUsage: 120, memoryLimit: 1024 })),
     services: SERVICE_SAMPLES,
     createdAt: '2023-12-01T08:00:00.000Z',
     lastCheckedAt: new Date().toISOString(),
