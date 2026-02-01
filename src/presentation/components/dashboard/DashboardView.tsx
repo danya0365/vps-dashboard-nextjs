@@ -1,7 +1,9 @@
 "use client";
 
 import { DashboardViewModel } from "@/src/presentation/presenters/dashboard/DashboardPresenter";
+import { useDashboardPresenter } from "@/src/presentation/presenters/dashboard/useDashboardPresenter";
 import { animated, useSpring } from "@react-spring/web";
+import { AnimatedButton } from "../common/AnimatedButton";
 import { GlassPanel } from "../common/GlassPanel";
 import { MainLayout } from "../layout/MainLayout";
 import { ServerCard } from "./ServerCard";
@@ -15,7 +17,11 @@ interface DashboardViewProps {
  * Shows VPS servers grid and stats overview
  */
 export function DashboardView({ initialViewModel }: DashboardViewProps) {
-  const { servers, stats } = initialViewModel;
+  const [state, actions] = useDashboardPresenter(initialViewModel);
+  const { viewModel, loading, actionLoading, error } = state;
+  
+  const servers = viewModel?.servers || [];
+  const stats = viewModel?.stats || initialViewModel.stats;
 
   // Stagger animation
   const heroSpring = useSpring({
@@ -28,14 +34,43 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     <MainLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Hero section */}
-        <animated.div style={heroSpring} className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Server Dashboard
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Monitor and manage your virtual private servers
-          </p>
+        <animated.div style={heroSpring} className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Server Dashboard
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Monitor and manage your virtual private servers
+            </p>
+          </div>
+          <AnimatedButton
+            variant="secondary"
+            onClick={actions.refreshData}
+            disabled={loading}
+          >
+            <svg
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh
+          </AnimatedButton>
         </animated.div>
+
+        {/* Error message */}
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Stats overview */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -134,9 +169,10 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
               >
                 <ServerCard
                   server={server}
-                  onStart={(id) => console.log("Start", id)}
-                  onStop={(id) => console.log("Stop", id)}
-                  onRestart={(id) => console.log("Restart", id)}
+                  isLoading={actionLoading === server.id}
+                  onStart={actions.startServer}
+                  onStop={actions.stopServer}
+                  onRestart={actions.restartServer}
                 />
               </div>
             ))}

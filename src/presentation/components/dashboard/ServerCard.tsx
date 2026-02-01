@@ -1,12 +1,14 @@
 "use client";
 
 import { VpsServer } from "@/src/application/repositories/IVpsRepository";
+import Link from "next/link";
 import { AnimatedButton } from "../common/AnimatedButton";
 import { AnimatedCard } from "../common/AnimatedCard";
 import { StatusIndicator } from "../common/StatusIndicator";
 
 interface ServerCardProps {
   server: VpsServer;
+  isLoading?: boolean;
   onStart?: (id: string) => void;
   onStop?: (id: string) => void;
   onRestart?: (id: string) => void;
@@ -18,8 +20,9 @@ interface ServerCardProps {
  * - Status indicator
  * - Resource usage bars
  * - Quick actions (start/stop/restart)
+ * - Link to details page
  */
-export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardProps) {
+export function ServerCard({ server, isLoading, onStart, onStop, onRestart }: ServerCardProps) {
   const formatUptime = (seconds: number): string => {
     if (seconds === 0) return "—";
     const days = Math.floor(seconds / 86400);
@@ -41,15 +44,22 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
   };
 
   return (
-    <AnimatedCard className="p-5 flex flex-col gap-4">
+    <AnimatedCard className={`p-5 flex flex-col gap-4 ${isLoading ? "opacity-70" : ""}`}>
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl z-10">
+          <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
+        <Link href={`/servers/${server.id}`} className="flex items-center gap-3 group">
           {/* Provider badge */}
           <div
             className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getProviderColor(
               server.provider
-            )} flex items-center justify-center shadow-lg`}
+            )} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
           >
             <svg
               className="w-5 h-5 text-white"
@@ -66,14 +76,14 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-cyan-500 transition-colors">
               {server.name}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {server.hostname}
             </p>
           </div>
-        </div>
+        </Link>
         <StatusIndicator status={server.status} size="md" />
       </div>
 
@@ -115,6 +125,7 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
             size="sm"
             className="flex-1"
             onClick={() => onStart(server.id)}
+            disabled={isLoading}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -130,6 +141,7 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
                 size="sm"
                 className="flex-1"
                 onClick={() => onStop(server.id)}
+                disabled={isLoading}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -143,6 +155,7 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
                 variant="ghost"
                 size="sm"
                 onClick={() => onRestart(server.id)}
+                disabled={isLoading}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -157,6 +170,7 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
             size="sm"
             className="flex-1"
             onClick={() => onRestart(server.id)}
+            disabled={isLoading}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -164,6 +178,15 @@ export function ServerCard({ server, onStart, onStop, onRestart }: ServerCardPro
             Restart
           </AnimatedButton>
         )}
+        
+        {/* View details link */}
+        <Link href={`/servers/${server.id}`}>
+          <AnimatedButton variant="ghost" size="sm">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </AnimatedButton>
+        </Link>
       </div>
     </AnimatedCard>
   );
