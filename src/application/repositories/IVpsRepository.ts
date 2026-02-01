@@ -20,6 +20,7 @@ export interface VpsUsage {
   ramPercent: number;
   storagePercent: number;
   bandwidthUsed: number; // GB
+  loadAverage: number;   // 1m load
 }
 
 export interface DockerContainer {
@@ -63,6 +64,7 @@ export interface DashboardStats {
   totalStorage: number;
   avgCpuUsage: number;
   avgRamUsage: number;
+  avgLoadAverage: number;
 }
 
 // ============================================

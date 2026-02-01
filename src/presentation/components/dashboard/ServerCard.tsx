@@ -106,6 +106,7 @@ export function ServerCard({ server, isLoading, onStart, onStop, onRestart, onCo
         <SpecItem label="CPU" value={`${server.specs.cpu} cores`} />
         <SpecItem label="RAM" value={`${server.specs.ram} GB`} />
         <SpecItem label="Storage" value={`${server.specs.storage} GB`} />
+        <SpecItem label="Load" value={server.usage.loadAverage.toString()} />
         <SpecItem label="OS" value={server.os.split(" ")[0]} />
       </div>
 

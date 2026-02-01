@@ -1,9 +1,9 @@
 import {
-  DashboardStats,
-  DockerContainer,
-  IVpsRepository,
-  SystemService,
-  VpsServer,
+    DashboardStats,
+    DockerContainer,
+    IVpsRepository,
+    SystemService,
+    VpsServer,
 } from '@/src/application/repositories/IVpsRepository';
 import { Client } from 'ssh2';
 
@@ -154,6 +154,7 @@ export class SshVpsRepository implements IVpsRepository {
         ramPercent: Math.round((usedMem / totalMem) * 100),
         storagePercent: Math.round((usedDisk / totalDisk) * 100),
         bandwidthUsed: 0,
+        loadAverage: load,
       },
       uptime,
       dockerContainers,
@@ -178,6 +179,7 @@ export class SshVpsRepository implements IVpsRepository {
       totalStorage: server.specs.storage,
       avgCpuUsage: server.usage.cpuPercent,
       avgRamUsage: server.usage.ramPercent,
+      avgLoadAverage: server.usage.loadAverage,
     };
   }
 
@@ -192,6 +194,7 @@ export class SshVpsRepository implements IVpsRepository {
       totalStorage: 0,
       avgCpuUsage: 0,
       avgRamUsage: 0,
+      avgLoadAverage: 0,
     };
   }
 
