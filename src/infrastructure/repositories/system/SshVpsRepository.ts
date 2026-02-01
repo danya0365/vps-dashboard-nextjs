@@ -1,9 +1,9 @@
 import {
-    DashboardStats,
-    DockerContainer,
-    IVpsRepository,
-    SystemService,
-    VpsServer,
+  DashboardStats,
+  DockerContainer,
+  IVpsRepository,
+  SystemService,
+  VpsServer,
 } from '@/src/application/repositories/IVpsRepository';
 import { Client } from 'ssh2';
 
@@ -58,25 +58,28 @@ export class SshVpsRepository implements IVpsRepository {
 
   async getAll(): Promise<VpsServer[]> {
     try {
-      // Combined command to reduce SSH connections
       const command = `
         echo "---OS---"
-        lsb_release -d | cut -f2
+        lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2
         echo "---CPU---"
         lscpu | grep "Model name" | sed 's/Model name:[[:space:]]*//'
         nproc
         echo "---MEM---"
-        free -b | grep Mem | awk '{print $2,$3}'
+        free -b
         echo "---DISK---"
         df -B1 / | tail -1 | awk '{print $2,$3}'
         echo "---UPTIME---"
         cat /proc/uptime | awk '{print $1}'
         echo "---DOCKER---"
         docker ps --format "{{.Names}}|{{.Status}}|{{.Image}}|{{.RunningFor}}" 2>/dev/null || echo "not-installed"
-        echo "---SERVICES---"
-        systemctl list-units --type=service --state=running --no-pager --no-legend | awk '{print $1"|"$4}' | head -n 20
+        echo "---DOCKER_STATS---"
+        docker stats --no-stream --format "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemLimit}}" 2>/dev/null || echo ""
         echo "---LOAD---"
-        cat /proc/loadavg | awk '{print $1}'
+        cat /proc/loadavg
+        echo "---IOWAIT---"
+        top -bn1 | grep "Cpu(s)" | sed 's/.*, *\\([0-9.]*\\)%* wa.*/\\1/'
+        echo "---TRAFFIC---"
+        cat /proc/net/dev | grep -E "eth0|enp|eno" | head -1 | awk '{print $2,$10}'
       `;
 
       const output = await this.executeCommand(command);
@@ -105,23 +108,67 @@ export class SshVpsRepository implements IVpsRepository {
     const cpuModel = sections['CPU']?.[0] || 'Unknown';
     const cpuCores = parseInt(sections['CPU']?.[1] || '1');
     
-    const memData = sections['MEM']?.[0]?.split(' ') || ['0', '0'];
-    const totalMem = parseInt(memData[0]);
-    const usedMem = parseInt(memData[1]);
+    // Memory Parsing
+    const memLines = sections['MEM'] || [];
+    const memRow = memLines.find(l => l.startsWith('Mem:'))?.split(/\s+/) || [];
+    const swapRow = memLines.find(l => l.startsWith('Swap:'))?.split(/\s+/) || [];
+    
+    const totalMem = parseInt(memRow[1] || '0');
+    const usedMem = parseInt(memRow[2] || '0');
+    const swapTotal = parseInt(swapRow[1] || '0');
+    const swapUsed = parseInt(swapRow[2] || '0');
 
     const diskData = sections['DISK']?.[0]?.split(' ') || ['0', '0'];
     const totalDisk = parseInt(diskData[0]);
     const usedDisk = parseInt(diskData[1]);
 
     const uptime = parseFloat(sections['UPTIME']?.[0] || '0');
-    const load = parseFloat(sections['LOAD']?.[0] || '0');
+    const loadData = sections['LOAD']?.[0]?.split(' ') || ['0', '0', '0'];
+    const load1 = parseFloat(loadData[0]);
+    const load5 = parseFloat(loadData[1]);
+    const load15 = parseFloat(loadData[1]);
+    const ioWait = parseFloat(sections['IOWAIT']?.[0] || '0');
+
+    // Docker Stats Parsing
+    const dockerStatsMap = new Map<string, { cpu: number, mem: number, limit: number }>();
+    (sections['DOCKER_STATS'] || []).forEach(line => {
+        const [name, cpu, memStr, limitStr] = line.split('|');
+        if (name && cpu) {
+            const memMatch = memStr.match(/([0-9.]+)([a-zA-Z]+)/);
+            const limitMatch = limitStr.match(/([0-9.]+)([a-zA-Z]+)/);
+            
+            const parseToMb = (val: string | null, unit: string | null) => {
+                if (!val) return 0;
+                let v = parseFloat(val);
+                if (unit?.toUpperCase() === 'GB') v *= 1024;
+                if (unit?.toUpperCase() === 'B') v /= (1024 * 1024);
+                if (unit?.toUpperCase() === 'KB') v /= 1024;
+                return v;
+            };
+
+            dockerStatsMap.set(name, {
+                cpu: parseFloat(cpu.replace('%', '')),
+                mem: parseToMb(memMatch?.[1] || '0', memMatch?.[2] || 'MB'),
+                limit: parseToMb(limitMatch?.[1] || '0', limitMatch?.[2] || 'MB')
+            });
+        }
+    });
 
     // Parse Docker
     const dockerContainers: DockerContainer[] = (sections['DOCKER'] || [])
       .filter(line => line !== 'not-installed')
       .map(line => {
         const [name, status, image, uptimeStr] = line.split('|');
-        return { name, status, image, uptime: uptimeStr };
+        const stats = dockerStatsMap.get(name);
+        return { 
+            name, 
+            status, 
+            image, 
+            uptime: uptimeStr,
+            cpuPercent: stats?.cpu || 0,
+            memoryUsage: stats?.mem || 0,
+            memoryLimit: stats?.limit || 0
+        };
       });
 
     // Parse Services
@@ -133,6 +180,8 @@ export class SshVpsRepository implements IVpsRepository {
         description: name
       };
     });
+
+    const traffic = sections['TRAFFIC']?.[0]?.split(' ') || ['0', '0'];
 
     return {
       id: 'vps-remote',
@@ -150,11 +199,27 @@ export class SshVpsRepository implements IVpsRepository {
         bandwidth: 10,
       },
       usage: {
-        cpuPercent: Math.min(Math.round(load * 100 / cpuCores), 100),
+        cpuPercent: Math.min(Math.round(load1 * 100 / cpuCores), 100),
         ramPercent: Math.round((usedMem / totalMem) * 100),
         storagePercent: Math.round((usedDisk / totalDisk) * 100),
         bandwidthUsed: 0,
-        loadAverage: load,
+        loadAverage: load1,
+        loadAverages: [load1, load5, load15],
+        ioWait,
+        ramUsage: {
+            used: Math.round(usedMem / (1024 * 1024)),
+            total: Math.round(totalMem / (1024 * 1024)),
+            swapUsed: Math.round(swapUsed / (1024 * 1024)),
+            swapTotal: Math.round(swapTotal / (1024 * 1024))
+        },
+        networkThroughput: {
+            in: parseInt(traffic[0]),
+            out: parseInt(traffic[1])
+        },
+        diskIo: {
+            read: 0,
+            write: 0
+        }
       },
       uptime,
       dockerContainers,
