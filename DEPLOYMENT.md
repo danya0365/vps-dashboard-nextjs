@@ -37,7 +37,11 @@ sudo chown -R $USER:$USER /opt/app/vps-dashboard-nextjs
 | `VPS_HOST` | `203.151.166.65` |
 | `VPS_PORT` | `2222` |
 | `VPS_USERNAME` | `acuser01` |
-| `VPS_PASSWORD` | (ตามที่คุณมี) |
+| `VPS_PASSWORD` | (SSH Password สำหรับ Deploy) |
+| `VPS_SSH_HOST` | `203.151.166.65` |
+| `VPS_SSH_PORT` | `2222` |
+| `VPS_SSH_USER` | `acuser01` |
+| `VPS_SSH_PASS` | (SSH Password สำหรับดึงข้อมูล Stats) |
 
 ---
 

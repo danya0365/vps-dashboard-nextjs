@@ -19,7 +19,11 @@ services:
       - "3001:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_APP_URL=${SITE_URL:-http://203.151.166.65:3001}
+      - NEXT_PUBLIC_APP_URL=${SITE_URL}
+      - VPS_SSH_HOST=${VPS_SSH_HOST}
+      - VPS_SSH_PORT=${VPS_SSH_PORT}
+      - VPS_SSH_USER=${VPS_SSH_USER}
+      - VPS_SSH_PASS=${VPS_SSH_PASS}
     networks:
       - internal
       - traefik-public
