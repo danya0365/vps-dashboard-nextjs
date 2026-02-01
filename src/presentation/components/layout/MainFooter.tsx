@@ -8,6 +8,11 @@ import { animated, useSpring } from "@react-spring/web";
  * Minimal height design
  */
 export function MainFooter() {
+
+  const version = process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0';
+  const commitSha = process.env.NEXT_PUBLIC_COMMIT_SHA || '';
+  const shortSha = commitSha.slice(0, 7);
+
   // Fade in animation
   const fadeIn = useSpring({
     from: { opacity: 0 },
@@ -34,7 +39,7 @@ export function MainFooter() {
       {/* Version info */}
       <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
         <span>© 2026 VPS Dashboard</span>
-        <span className="hidden sm:inline">v0.1.0</span>
+        <span className="whitespace-nowrap">v{version} {shortSha && `(${shortSha})`}</span>
       </div>
     </animated.footer>
   );
