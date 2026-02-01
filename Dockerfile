@@ -6,8 +6,8 @@
 FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --ignore-engines
 
 # Stage 2: Builder
 FROM node:22-alpine AS builder
@@ -21,7 +21,7 @@ ENV VERCEL_GIT_COMMIT_SHA=$BUILD_COMMIT_SHA
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+RUN yarn build
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
