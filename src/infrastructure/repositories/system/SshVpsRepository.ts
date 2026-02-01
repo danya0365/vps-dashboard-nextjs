@@ -137,6 +137,8 @@ export class SshVpsRepository implements IVpsRepository {
     // Docker Stats Parsing
     // Format: ID|CPUPerc|MemUsage|MemPerc
     // MemUsage example: "207MiB / 7.653GiB" - contains both used and limit separated by " / "
+    console.log('[Docker Stats] Raw lines:', sections['DOCKER_STATS']);
+    console.log('[Docker] Raw lines:', sections['DOCKER']);
     const dockerStatsMap = new Map<string, { cpu: number, mem: number, limit: number, memPerc: number }>();
     (sections['DOCKER_STATS'] || []).forEach(line => {
         const parts = line.split('|');
@@ -148,6 +150,14 @@ export class SshVpsRepository implements IVpsRepository {
         const memPercStr = parts[3]?.trim();
         
         if (!id || !cpuStr) return;
+
+        // Helper to safely extract numeric values (handles %, units, etc)
+        const extractNumber = (str: string): number => {
+            if (!str) return 0;
+            // Match the first valid float number in the string
+            const match = str.match(/([0-9.]+)/);
+            return match ? parseFloat(match[1]) : 0;
+        };
 
         // Parse memory value with unit to MB
         const parseMemoryToMB = (str: string): number => {
@@ -170,8 +180,9 @@ export class SshVpsRepository implements IVpsRepository {
         const memUsed = parseMemoryToMB(memParts[0] || '');
         const memLimit = parseMemoryToMB(memParts[1] || '');
 
-        const cpuValue = parseFloat(cpuStr.replace('%', '').trim());
-        const memPercValue = parseFloat(memPercStr.replace('%', '').trim());
+        // Use robust extraction for percentages
+        const cpuValue = extractNumber(cpuStr);
+        const memPercValue = extractNumber(memPercStr);
         
         dockerStatsMap.set(id, {
             cpu: isNaN(cpuValue) ? 0 : cpuValue,
@@ -186,7 +197,12 @@ export class SshVpsRepository implements IVpsRepository {
       .filter(line => line !== 'not-installed')
       .map(line => {
         const [id, name, status, image, uptimeStr] = line.split('|');
-        const stats = dockerStatsMap.get(id.trim());
+        const trimmedId = id?.trim();
+        const stats = dockerStatsMap.get(trimmedId);
+        
+        // Debug logging
+        console.log(`[Docker] Container: ${name?.trim()}, ID: ${trimmedId}, HasStats: ${!!stats}, CPU: ${stats?.cpu}, Mem: ${stats?.mem}`);
+        
         return { 
             name: name?.trim() || 'Unknown', 
             status, 

@@ -1,10 +1,12 @@
 import { MockVpsRepository } from '@/src/infrastructure/repositories/mock/MockVpsRepository';
-import { SystemVpsRepository } from '@/src/infrastructure/repositories/system/SystemVpsRepository';
+import { SshVpsRepository } from '@/src/infrastructure/repositories/system/SshVpsRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
-const repository = process.env.NODE_ENV === 'development' 
-  ? new MockVpsRepository() 
-  : new SystemVpsRepository();
+const useSsh = process.env.NEXT_PUBLIC_USE_SSH !== 'false';
+
+const repository = useSsh
+  ? new SshVpsRepository()
+  : new MockVpsRepository();
 
 /**
  * GET /api/vps
