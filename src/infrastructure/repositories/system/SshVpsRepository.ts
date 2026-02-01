@@ -71,15 +71,20 @@ export class SshVpsRepository implements IVpsRepository {
         echo "---UPTIME---"
         cat /proc/uptime | awk '{print $1}'
         echo "---DOCKER---"
-        docker ps --format "{{.Names}}|{{.Status}}|{{.Image}}|{{.RunningFor}}" 2>/dev/null || echo "not-installed"
+        docker ps --format "{{.ID}}|{{.Names}}|{{.Status}}|{{.Image}}|{{.RunningFor}}" 2>/dev/null || echo "not-installed"
         echo "---DOCKER_STATS---"
-        docker stats --no-stream --format "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemLimit}}" 2>/dev/null || echo ""
+        docker stats --no-stream --format "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemLimit}}" 2>/dev/null || echo ""
         echo "---LOAD---"
         cat /proc/loadavg
         echo "---IOWAIT---"
         top -bn1 | grep "Cpu(s)" | sed 's/.*, *\\([0-9.]*\\)%* wa.*/\\1/'
         echo "---TRAFFIC---"
-        cat /proc/net/dev | grep -E "eth0|enp|eno" | head -1 | awk '{print $2,$10}'
+        INTERFACE=$(ip -o -4 route show to default | head -1 | awk '{print $5}')
+        if [ -n "$INTERFACE" ]; then
+          grep "$INTERFACE" /proc/net/dev | awk '{print $2,$10}'
+        else
+          cat /proc/net/dev | grep -E "eth0|enp|eno" | head -1 | awk '{print $2,$10}'
+        fi
       `;
 
       const output = await this.executeCommand(command);
@@ -124,32 +129,34 @@ export class SshVpsRepository implements IVpsRepository {
 
     const uptime = parseFloat(sections['UPTIME']?.[0] || '0');
     const loadData = sections['LOAD']?.[0]?.split(' ') || ['0', '0', '0'];
-    const load1 = parseFloat(loadData[0]);
-    const load5 = parseFloat(loadData[1]);
-    const load15 = parseFloat(loadData[1]);
-    const ioWait = parseFloat(sections['IOWAIT']?.[0] || '0');
+    const load1 = parseFloat(loadData[0]) || 0;
+    const load5 = parseFloat(loadData[1]) || 0;
+    const load15 = parseFloat(loadData[2]) || 0;
+    const ioWait = parseFloat(sections['IOWAIT']?.[0] || '0') || 0;
 
     // Docker Stats Parsing
     const dockerStatsMap = new Map<string, { cpu: number, mem: number, limit: number }>();
     (sections['DOCKER_STATS'] || []).forEach(line => {
-        const [name, cpu, memStr, limitStr] = line.split('|');
-        if (name && cpu) {
-            const memMatch = memStr.match(/([0-9.]+)([a-zA-Z]+)/);
-            const limitMatch = limitStr.match(/([0-9.]+)([a-zA-Z]+)/);
-            
-            const parseToMb = (val: string | null, unit: string | null) => {
-                if (!val) return 0;
-                let v = parseFloat(val);
-                if (unit?.toUpperCase() === 'GB') v *= 1024;
-                if (unit?.toUpperCase() === 'B') v /= (1024 * 1024);
-                if (unit?.toUpperCase() === 'KB') v /= 1024;
+        const [id, cpu, memStr, limitStr] = line.split('|');
+        if (id && cpu) {
+            const parseValue = (str: string) => {
+                const match = str.match(/([0-9.]+)\s*([a-zA-Z]+)/);
+                if (!match) return 0;
+                let v = parseFloat(match[1]);
+                if (isNaN(v)) return 0;
+                const unit = match[2].toUpperCase();
+                
+                if (unit.startsWith('G')) v *= 1024;        // GB, GiB
+                else if (unit.startsWith('K')) v /= 1024;   // KB, KiB
+                else if (unit.startsWith('B')) v /= (1024 * 1024); // B
                 return v;
             };
 
-            dockerStatsMap.set(name, {
-                cpu: parseFloat(cpu.replace('%', '')),
-                mem: parseToMb(memMatch?.[1] || '0', memMatch?.[2] || 'MB'),
-                limit: parseToMb(limitMatch?.[1] || '0', limitMatch?.[2] || 'MB')
+            const cpuValue = parseFloat(cpu.replace('%', '').trim());
+            dockerStatsMap.set(id.trim(), {
+                cpu: isNaN(cpuValue) ? 0 : cpuValue,
+                mem: parseValue(memStr),
+                limit: parseValue(limitStr)
             });
         }
     });
@@ -158,10 +165,10 @@ export class SshVpsRepository implements IVpsRepository {
     const dockerContainers: DockerContainer[] = (sections['DOCKER'] || [])
       .filter(line => line !== 'not-installed')
       .map(line => {
-        const [name, status, image, uptimeStr] = line.split('|');
-        const stats = dockerStatsMap.get(name);
+        const [id, name, status, image, uptimeStr] = line.split('|');
+        const stats = dockerStatsMap.get(id.trim());
         return { 
-            name, 
+            name: name?.trim() || 'Unknown', 
             status, 
             image, 
             uptime: uptimeStr,
