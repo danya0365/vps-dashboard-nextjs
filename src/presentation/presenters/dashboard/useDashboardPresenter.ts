@@ -75,6 +75,11 @@ export function useDashboardPresenter(
                   runningServers.length
               )
             : 0,
+        avgLoadAverage:
+          runningServers.length > 0
+            ? Number((runningServers.reduce((acc, s) => acc + s.usage.loadAverage, 0) /
+                runningServers.length).toFixed(2))
+            : 0,
       };
       return { servers: updatedServers, stats };
     });

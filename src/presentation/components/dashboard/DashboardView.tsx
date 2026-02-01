@@ -171,6 +171,13 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
             color="text-purple-500"
             delay={300}
           />
+          <StatCard
+            label="Avg Load"
+            value={stats.avgLoadAverage}
+            icon="📉"
+            color="text-amber-500"
+            delay={350}
+          />
         </div>
 
         {/* Resource summary */}
