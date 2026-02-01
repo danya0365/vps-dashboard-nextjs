@@ -5,11 +5,11 @@
  */
 
 import {
-  DashboardStats,
-  DockerContainer,
-  IVpsRepository,
-  SystemService,
-  VpsServer,
+    DashboardStats,
+    DockerContainer,
+    IVpsRepository,
+    SystemService,
+    VpsServer,
 } from '@/src/application/repositories/IVpsRepository';
 
 // ============================================
@@ -41,7 +41,7 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04.5 LTS',
     specs: { cpu: 14, ram: 4, storage: 44, bandwidth: 10 },
-    usage: { cpuPercent: 42, ramPercent: 68, storagePercent: 44, bandwidthUsed: 2.1 },
+    usage: { cpuPercent: 42, ramPercent: 68, storagePercent: 44, bandwidthUsed: 2.1, loadAverage: 0.95 },
     uptime: 2167791,
     dockerContainers: [
       ...DOCKER_SAMPLES,
@@ -62,7 +62,7 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04 LTS',
     specs: { cpu: 4, ram: 8, storage: 160, bandwidth: 5 },
-    usage: { cpuPercent: 45, ramPercent: 62, storagePercent: 38, bandwidthUsed: 1.8 },
+    usage: { cpuPercent: 45, ramPercent: 62, storagePercent: 38, bandwidthUsed: 1.8, loadAverage: 1.25 },
     uptime: 2592000,
     dockerContainers: DOCKER_SAMPLES,
     services: SERVICE_SAMPLES,
@@ -79,7 +79,7 @@ const MOCK_SERVERS: VpsServer[] = [
     status: 'running',
     os: 'Ubuntu 22.04 LTS',
     specs: { cpu: 8, ram: 32, storage: 500, bandwidth: 8 },
-    usage: { cpuPercent: 28, ramPercent: 75, storagePercent: 52, bandwidthUsed: 3.2 },
+    usage: { cpuPercent: 28, ramPercent: 75, storagePercent: 52, bandwidthUsed: 3.2, loadAverage: 0.85 },
     uptime: 5184000,
     dockerContainers: DOCKER_SAMPLES.slice(0, 3),
     services: SERVICE_SAMPLES,
@@ -136,6 +136,7 @@ export class MockVpsRepository implements IVpsRepository {
       totalStorage,
       avgCpuUsage: Math.round(avgCpuUsage),
       avgRamUsage: Math.round(avgRamUsage),
+      avgLoadAverage: Number((runningServers.reduce((acc, s) => acc + s.usage.loadAverage, 0) / (runningServers.length || 1)).toFixed(2)),
     };
   }
 

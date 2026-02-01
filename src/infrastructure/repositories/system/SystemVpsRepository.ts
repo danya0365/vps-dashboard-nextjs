@@ -7,9 +7,9 @@
  */
 
 import {
-  DashboardStats,
-  IVpsRepository,
-  VpsServer
+    DashboardStats,
+    IVpsRepository,
+    VpsServer
 } from '@/src/application/repositories/IVpsRepository';
 import os from 'os';
 import si from 'systeminformation';
@@ -67,6 +67,7 @@ export class SystemVpsRepository implements IVpsRepository {
           ramPercent: Math.round((mem.active / mem.total) * 100),
           storagePercent: Math.round((usedDisk / totalDisk) * 100),
           bandwidthUsed: parseFloat(bandwidthUsed.toFixed(2)),
+          loadAverage: os.loadavg()[0],
         },
         uptime: time.uptime,
         dockerContainers: docker.map(c => ({
@@ -106,6 +107,7 @@ export class SystemVpsRepository implements IVpsRepository {
         totalStorage: 0,
         avgCpuUsage: 0,
         avgRamUsage: 0,
+        avgLoadAverage: 0,
       };
     }
 
@@ -119,6 +121,7 @@ export class SystemVpsRepository implements IVpsRepository {
       totalStorage: server.specs.storage,
       avgCpuUsage: server.usage.cpuPercent,
       avgRamUsage: server.usage.ramPercent,
+      avgLoadAverage: server.usage.loadAverage,
     };
   }
 
