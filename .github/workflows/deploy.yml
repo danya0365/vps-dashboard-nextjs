@@ -1,0 +1,78 @@
+# ============================================
+# GitHub Actions - Automatic Deployment
+# ============================================
+
+name: 🚀 Deploy to Production
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    name: 🔨 Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📚 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build
+        run: npm run build
+
+  deploy:
+    name: 🚀 Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: 🔐 Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script_stop: true
+          script: |
+            echo "🚀 Starting deployment for vps-dashboard-nextjs..."
+            
+            # Create app directory if not exists
+            sudo mkdir -p /opt/app/vps-dashboard-nextjs
+            sudo chown -R $USER:$USER /opt/app/vps-dashboard-nextjs
+            
+            cd /opt/app/vps-dashboard-nextjs
+            
+            # Initial clone if directory is empty
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # Pull latest code
+            git fetch origin release
+            git reset --hard origin/release
+            
+            # Start/Restart services
+            docker compose -f docker-compose.production.yml up -d --build
+            
+            echo "✅ Deployment complete!"
+
+      - name: ✅ Verify deployment
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 30
+          echo "Deployment finished. Check http://203.151.166.65:3001"

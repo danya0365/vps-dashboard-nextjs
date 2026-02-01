@@ -1,0 +1,37 @@
+# ============================================
+# Docker Compose สำหรับ Production
+# ============================================
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    driver: bridge
+
+services:
+  vps-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vps-dashboard
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_URL=${SITE_URL:-http://203.151.166.65:3001}
+    networks:
+      - internal
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vps-dashboard.rule=Host(`${APP_DOMAIN:-localhost}`)"
+      - "traefik.http.routers.vps-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.vps-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vps-dashboard.loadbalancer.server.port=3000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
