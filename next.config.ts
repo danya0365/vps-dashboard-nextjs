@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || '1.0.0', 
     NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
   },
+  experimental: {
+    serverComponentsExternalPackages: ['ssh2'],
+  },
 };
 
 export default nextConfig;

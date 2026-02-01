@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev-c": "rm -rf .next && yarn dev 2>&1 &",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
     "lint": "eslint"
